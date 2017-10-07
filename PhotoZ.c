@@ -59,14 +59,14 @@ printf("%d %d %d %d\n",i,k,j,h);
 
 int q;
 double z;               //ez lesz a redshift
-z=0;                    // erre majd kell egy ciklus 0 es 0.70 kozott 0.01 es lepessel
+z=0.00;                    // erre majd kell egy ciklus 0 es 0.70 kozott 0.01 es lepessel
 double* spekz;
 
 double xk,yk;
 int w,v;
-double* umspek;     //ujra-mintavetelezett-spektrum
+double* umszuro;     //ujra-mintavetelezett-szuro
 
-int u;
+int u,p;
 u=0;
 double flux,mab;
 double szamlalo,nevezo;
@@ -74,67 +74,78 @@ double* magnik;
 magnik=(double*)malloc(71*2*sizeof(double));
 
 
-while(z<0.01){
-    umspek=(double*)malloc(2*sizeof(double));
+while(z<0.71){
+    umszuro=(double*)malloc(2*sizeof(double));
     spekz=(double*)malloc(2*k*sizeof(double));
 
     for(q=0;q<k-1;q++){
         spekz[2*q]=(1.0+z)*spektrum[2*q];
         spekz[2*q+1]=spektrum[2*q+1];
-//    printf("%10f %10f\n",spekz[2*q],spekz[2*q+1]);
     }
+//    printf("%10f \n",z);
 
-//ujra kell mintavetelezni a spektrumot, veszek egy hullamhosszt a szurobol, majd megnezen melyik ket spektrum meresi pont koze esik, majd interpolalok es nezem a koztes pont erteket
+//    printf("%10f %10f\n",spekz[2*q],spekz[2*q+1]);
+
+//ujra kell mintavetelezni a SZUROT, veszek egy hullamhosszt a szurobol, majd megnezen melyik ket szuro meresi pont koze esik, majd interpolalok es nezem a koztes pont erteket
 
 
     v=0;
-    for(q=0;q<h-1;q++){                 //ujramintavetelezett spektrum: sorban veszi a hullámhosszertekeket a szuro adatsorabol
-        xk=szuro[2*q];
-        for(w=0;w<k-2;w++){
-            if(xk>spekz[2*w] && xk<spekz[2*(w+1)]){         // ha a spektrum adatsoranak ket hullamhosszerteke koze esik, akkor a spektrumbol interpolal oda erteket
+    for(q=0;q<k-1;q++){                 //ujramintavetelezett SZURO: sorban veszi a hullámhosszertekeket a spektrum adatsorabol
+        xk=spekz[2*q];
+        for(w=0;w<h-2;w++){
+            if(xk>szuro[2*w] && xk<szuro[2*(w+1)]){         // ha a SZURO adatsoranak ket hullamhosszerteke koze esik, akkor a SZURO adatsorabol interpolal oda erteket
                 if(v>0){
-                    umspek=(double*)realloc(umspek,2*(v+1)*sizeof(double));
+                    umszuro=(double*)realloc(umszuro,2*(v+1)*sizeof(double));
                 }
-                yk=interpol(spekz[2*w],spekz[2*(w+1)],spekz[2*w+1],spekz[2*(w+1)+1],xk);
-                umspek[2*v]=xk;
-                umspek[2*v+1]=yk;
+                yk=interpol(szuro[2*w],szuro[2*(w+1)],szuro[2*w+1],szuro[2*(w+1)+1],xk);
+                umszuro[2*v]=xk;
+                umszuro[2*v+1]=yk;
                 v+=1;
                 break;
                 }
-            if(xk==spekz[2*w]){                             // ha pont meresi pontra, akkor az ahhoz tartozo erteket veszi
+            if(xk==szuro[2*w]){                             // ha pont meresi pontra, akkor az ahhoz tartozo erteket veszi
                 if(v>0){
-                    umspek=(double*)realloc(umspek,2*(v+1)*sizeof(double));
+                    umszuro=(double*)realloc(umszuro,2*(v+1)*sizeof(double));
                 }
-                umspek[2*v]=xk;
-                umspek[2*v+1]=spekz[2*w+1];
+                umszuro[2*v]=xk;
+                umszuro[2*v+1]=szuro[2*w+1];
                 v+=1;
                 break;
             }
-            if(xk==spekz[2*(w+1)]){                         // ez is, csak az utolso elemre a fentebbi nem fut le, ezért kell ez
+            if(xk==szuro[2*(w+1)]){                         // ez is, csak az utolso elemre a fentebbi nem fut le, ezért kell ez
                 if(v>0){
-                    umspek=(double*)realloc(umspek,2*(v+1)*sizeof(double));
+                    umszuro=(double*)realloc(umszuro,2*(v+1)*sizeof(double));
                 }
-                umspek[2*v]=xk;
-                umspek[2*v+1]=spekz[2*(w+1)+1];
+                umszuro[2*v]=xk;
+                umszuro[2*v+1]=szuro[2*(w+1)+1];
                 v+=1;
                 break;
             }
         }
     }
 
-for(q=0;q<v;q++){
-    printf("%10f %10f\n",umspek[2*q],umspek[2*q+1]);
-}
-printf("%d %d\n \n ",h,v);
-    szamlalo=0;
-    nevezo=0;
+//for(q=0;q<v;q++){
+//    printf("%10f %10f\n",umszuro[2*q],umszuro[2*q+1]);
+//}
+//printf("%d %d\n \n ",h,v);
 
-    for(q=0;q<v;q++){                                       // keplet szerint szummazas az egyes elemekre, majd leosztasuk
-        szamlalo+=umspek[2*q+1]*(pow(umspek[2*q]*pow(10,-10),2)*3*pow(10,8))*szuro[2*q+1]*umspek[2*q]*pow(10,-10);
-        nevezo+=szuro[2*q+1]/(umspek[2*q]*pow(10,-10));
+    szamlalo=0.0;
+    nevezo=0.0;
+
+    p=0;
+    while(p<8000){
+        if(spekz[2*p]==umszuro[0]){
+            break;
+        }
+        p+=1;
     }
 
-    flux=szamlalo/(3*pow(10,8)*nevezo);
+    for(q=0;q<v;q++){                                       // keplet szerint szummazas az egyes elemekre, majd leosztasuk
+        szamlalo+=spekz[2*(q+p)+1]*umszuro[2*q+1]*spekz[2*(q+p)]*(spekz[2*(q+p)+1]-spekz[2*(q+p)]);
+        nevezo+=umszuro[2*q+1]/(spekz[2*(q+p)])*(spekz[2*(q+p)+1]-spekz[2*(q+p)]);
+    }                       // EZ ALSO KOZELITO OSSZEG
+
+    flux=szamlalo/(3.0*pow(10.0,18.0)*nevezo);
     mab=-2.5*log10(flux)-48.60;                         // valamiert nagyon negativ ertek jon ki...
 
     magnik[2*u]=z;
@@ -142,13 +153,14 @@ printf("%d %d\n \n ",h,v);
 
     u+=1;
     z+=0.01;
-    free(umspek);
+    free(umszuro);
     free(spekz);
 }
-
+file=fopen(argv[3],"w");
 for(q=0;q<u;q++){
-    printf("%10f %10f\n",magnik[2*q],magnik[2*q+1]);
+    fprintf(file,"%10f %10f\n",magnik[2*q],magnik[2*q+1]);
 }
+
 
 
 return 0;
